@@ -3,14 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fainal.net/internal/data"
+	"fainal.net/internal/jsonlog"
+	"fainal.net/internal/mailer"
 	"flag"
-	"github.com/shynggys9219/greenlight/internal/mailer"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/shynggys9219/greenlight/internal/data"
-	"github.com/shynggys9219/greenlight/internal/jsonlog"
 )
 
 const version = "1.0.0"
