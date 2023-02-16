@@ -53,6 +53,10 @@ type application struct {
 //adiya   - os.Getenv("DSN")
 //Sasha   -
 
+func test() {
+
+}
+
 func main() {
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 8000, "API server port")
@@ -61,7 +65,7 @@ func main() {
 	// Read the DSN value from the db-dsn command-line flag into the config struct. We
 	// default to using our development DSN if no flag is provided.
 	// in powershell use next command: $env:DSN="postgres://postgres:20072004@localhost:5432/greenlight?sslmode=disable"
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:admin@localhost/greenlight?", "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("DSN"), "PostgreSQL DSN")
 
 	// Setting restrictions on db connections
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
