@@ -48,6 +48,11 @@ type application struct {
 	wg     sync.WaitGroup
 }
 
+// postgres
+//nurzhan - "postgres://postgres:admin@localhost/greenlight?sslmode=disable"
+//adiya   - os.Getenv("DSN")
+//Sasha   -
+
 func main() {
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 8000, "API server port")
