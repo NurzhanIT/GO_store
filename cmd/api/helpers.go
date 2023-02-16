@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"fainal.net/internal/validator"
 	"github.com/julienschmidt/httprouter"
-	"github.com/shynggys9219/greenlight/internal/validator"
 )
 
 // again, in the book you have "any" type, but if you use go 1.17 and lower

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/shynggys9219/greenlight/internal/data"
+	"fainal.net/internal/data"
 	"net/http"
 )
 

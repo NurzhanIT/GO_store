@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base32"
-	"github.com/shynggys9219/greenlight/internal/validator"
+	"fainal.net/internal/validator"
 	"time"
 )
 

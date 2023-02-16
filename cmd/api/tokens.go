@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
-	"github.com/shynggys9219/greenlight/internal/data"
-	"github.com/shynggys9219/greenlight/internal/validator"
+	"fainal.net/internal/data"
+	"fainal.net/internal/validator"
 	"net/http"
 	"time"
 )

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/shynggys9219/greenlight/internal/data"
-	"github.com/shynggys9219/greenlight/internal/validator"
+	"fainal.net/internal/data"
+	"fainal.net/internal/validator"
 )
 
 // Add a createMovieHandler for the "POST /v1/movies" endpoint.

@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"errors"
+	"fainal.net/internal/validator"
 	"github.com/lib/pq"
-	"github.com/shynggys9219/greenlight/internal/validator"
 	"golang.org/x/crypto/bcrypt"
 	"time" // New import
 )
