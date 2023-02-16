@@ -3,11 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fainal.net/internal/validator"
 	"fmt"
-	"time"
-
 	"github.com/lib/pq"
-	"github.com/shynggys9219/greenlight/internal/validator"
+	"time"
 )
 
 // By default, the keys in the JSON object are equal to the field names in the struct ( ID,
