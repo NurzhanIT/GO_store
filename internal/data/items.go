@@ -11,38 +11,25 @@ import (
 
 // By default, the keys in the JSON object are equal to the field names in the struct ( ID,
 // CreatedAt, Title and so on).
-type Movie struct {
-	ID        int64     `json:"id"`                       // Unique integer ID for the movie
-	CreatedAt time.Time `json:"-"`                        // Timestamp for when the movie is added to our database, "-" directive, hidden in response
-	Title     string    `json:"title"`                    // Movie title
-	Year      int32     `json:"year,omitempty"`           // Movie release year, "omitempty" - hide from response if empty
-	Runtime   int32     `json:"runtime,omitempty,string"` // Movie runtime (in minutes), "string" - convert int to string
-	Genres    []string  `json:"genres,omitempty"`         // Slice of genres for the movie (romance, comedy, etc.)
-	Version   int32     `json:"version"`                  // The version number starts at 1 and will be incremented each
-	// time the movie information is updated
+type Item struct {
+	ID          int64    `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Price       int32    `json:"price,omitempty"`
+	Category    []string `json:"category,omitempty"`
 }
 
-type Director struct {
-	ID      int64    `json:"id"` // Unique integer ID for the movie
-	Name    string   `json:"name"`
-	Surname string   `json:"surname"`
-	Awards  []string `json:"awards,omitempty"` // Slice of genres for the movie (romance, comedy, etc.)
-
-	// time the movie information is updated
-}
-
-func ValidateMovie(v *validator.Validator, movie *Movie) {
-	v.Check(movie.Title != "", "title", "must be provided")
-	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long")
-	v.Check(movie.Year != 0, "year", "must be provided")
-	v.Check(movie.Year >= 1888, "year", "must be greater than 1888")
-	v.Check(movie.Year <= int32(time.Now().Year()), "year", "must not be in the future")
-	v.Check(movie.Runtime != 0, "runtime", "must be provided")
-	v.Check(movie.Runtime > 0, "runtime", "must be a positive integer")
-	v.Check(movie.Genres != nil, "genres", "must be provided")
-	v.Check(len(movie.Genres) >= 1, "genres", "must contain at least 1 genre")
-	v.Check(len(movie.Genres) <= 5, "genres", "must not contain more than 5 genres")
-	v.Check(validator.Unique(movie.Genres), "genres", "must not contain duplicate values")
+func ValidateMovie(v *validator.Validator, item *Item) {
+	v.Check(item.Name != "", "item's name", "must be provided")
+	v.Check(len(item.Name) <= 500, "item's name", "must not be more than 500 bytes long")
+	v.Check(item.Description != "", "item's description", "must be provided")
+	v.Check(len(item.Description) <= 2000, "item's description", "must not be more than 2000 bytes long")
+	v.Check(item.Price != 0, "item's price", "must be provided")
+	v.Check(item.Price >= 200, "item's price", "must be greater than 200 tenge")
+	v.Check(item.Category != nil, "item's category", "must be provided")
+	v.Check(len(item.Category) >= 1, "item's category", "must contain at least 1 category")
+	v.Check(len(item.Category) <= 5, "item's category", "must not contain more than 5 category")
+	v.Check(validator.Unique(item.Category), "item's category", "must not contain duplicate values")
 }
 
 // Define a MovieModel struct type which wraps a sql.DB connection pool.
@@ -50,41 +37,32 @@ type MovieModel struct {
 	DB *sql.DB
 }
 
-type DirectorsModel struct {
+type ItemModel struct {
 	DB *sql.DB
 }
 
 // method for inserting a new record in the movies table.
-func (m MovieModel) Insert(movie *Movie) error {
+func (m ItemModel) Insert(item *Item) error {
 	query := `
-		INSERT INTO movies(title, year, runtime, genres)
+		INSERT INTO items(name, description, price, category)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, version`
+		RETURNING id`
 
-	return m.DB.QueryRow(query, &movie.Title, &movie.Year, &movie.Runtime, pq.Array(&movie.Genres)).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
-}
-func (m DirectorsModel) Insert(director *Director) error {
-	query := `
-	INSERT INTO directors(name, surname, awards)
-	VALUES ($1, $2, $3)
-	RETURNING id`
-
-	return m.DB.QueryRow(query, &director.Name, &director.Surname, pq.Array(&director.Awards)).Scan(&director.ID)
+	return m.DB.QueryRow(query, &item.Name, &item.Description, &item.Price, pq.Array(&item.Category)).Scan(&item.ID)
 }
 
 // method for fetching a specific record from the movies table.
-func (m MovieModel) Get(id int64) (*Movie, error) {
+func (m ItemModel) Get(id int64) (*Item, error) {
 	query := `
-SELECT id, created_at, title, year, runtime, genres, version
-FROM movies
+SELECT id, name, description, price, category
+FROM items
 WHERE id = $1`
-	var movie Movie
-	m.DB.QueryRow(query, id).Scan(&movie.ID, &movie.CreatedAt, &movie.Title,
-		&movie.Year,
-		&movie.Runtime,
-		pq.Array(&movie.Genres),
-		&movie.Version)
-	return &movie, m.DB.QueryRow(query, id).Err()
+	var item Item
+	m.DB.QueryRow(query, id).Scan(&item.ID, &item.Name,
+		&item.Description,
+		&item.Price,
+		pq.Array(&item.Category))
+	return &item, m.DB.QueryRow(query, id).Err()
 }
 func (m DirectorsModel) GetAll(name string, awards []string, filters Filters) ([]*Director, error) {
 	// Update the SQL query to include the filter conditions.
