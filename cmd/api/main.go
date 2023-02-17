@@ -14,17 +14,14 @@ import (
 
 const version = "1.0.0"
 
-// Add a db struct field to hold the configuration settings for our database connection
-// pool. For now this only holds the DSN, which we will read in from a command-line flag.
 type config struct {
 	port int
 	env  string
 	db   struct {
-		dsn          string // a conenction string to a sql server
-		maxOpenConns int    // limit on the number of ‘open’ connections
-		maxIdleConns int    // limit on the number of idle connections in the pool
-		maxIdleTime  string // the maximum length of time that a connection can be idle
-		// maxLifetime  string //optional here; maximum length of time that a connection can be reused for
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  string
 	}
 	limiter struct {
 		rps     float64
@@ -43,19 +40,15 @@ type config struct {
 type application struct {
 	config config
 	logger *jsonlog.Logger
-	models data.Models // hold new models in app
+	models data.Models
 	mailer mailer.Mailer
 	wg     sync.WaitGroup
 }
 
 // postgres
 //nurzhan - "postgres://postgres:admin@localhost/greenlight?sslmode=disable"
-//adiya   - os.Getenv("DSN")
+//adiya   - os.Getenv("DSN") $env:DSN="postgres://postgres:20072004@localhost:5432/finalProject?sslmode=disable"
 //Sasha   -
-
-func test() {
-
-}
 
 func main() {
 	var cfg config
@@ -90,7 +83,7 @@ func main() {
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
-	// db will be closed before main function is completed.
+
 	defer db.Close()
 	logger.PrintInfo("database connection pool established", nil)
 
@@ -100,7 +93,6 @@ func main() {
 		models: data.NewModels(db),
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender), // data.NewModels() function to initialize a Models struct
 	}
-	// Use the httprouter instance returned by app.routes() as the server handler.
 
 	err = app.serve()
 	if err != nil {
@@ -124,17 +116,9 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 	db.SetConnMaxIdleTime(duration)
 
-	// optional lifetime limit, to use this, uncomment db substruct field and corresponding flag stringvar
-	// lifetime, err := time.ParseDuration(cfg.db.maxIdleTime)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// db.SetConnMaxLifetime(lifetime)
-
-	//context with a 5 second timeout deadline
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = db.PingContext(ctx) //create a connection and verify that everything is set up correctly.
+	err = db.PingContext(ctx)
 
 	if err != nil {
 		return nil, err

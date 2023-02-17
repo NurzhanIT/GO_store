@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fainal.net/internal/validator"
-	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 	"time" // New import
 )
@@ -26,23 +25,12 @@ type User struct {
 	Version   int       `json:"-"`
 	Role      string    `json:"role"`
 }
-type Role struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	RoleName  string    `json:"role_name"`
-	UserID    string    `json:"user_id"`
-	Version   int       `json:"-"`
-}
 
 func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
 
 }
 
-// Create a custom password type which is a struct containing the plaintext and hashed
-// versions of the password for a user. The plaintext field is a *pointer* to a string,
-// so that we're able to distinguish between a plaintext password not being present in
-// the struct at all, versus a plaintext password which is the empty string "".
 type password struct {
 	plaintext *string
 	hash      []byte
@@ -59,10 +47,6 @@ RETURNING id, created_at, version`
 	args := []any{user.Name, user.Email, user.Password.hash, user.Activated, user.Role}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// If the table already contains a record with this email address, then when we try
-	// to perform the insert there will be a violation of the UNIQUE "users_email_key"
-	// constraint that we set up in the previous chapter. We check for this error
-	// specifically, and return custom ErrDuplicateEmail error instead.
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {
@@ -75,9 +59,6 @@ RETURNING id, created_at, version`
 	return nil
 }
 
-// Retrieve the User details from the database based on the user's email address.
-// Because we have a UNIQUE constraint on the email column, this SQL query will only
-// return one record (or none at all, in which case we return a ErrRecordNotFound error).
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 SELECT id, created_at, name, email, password_hash, activated, version, role
@@ -107,11 +88,6 @@ WHERE email = $1`
 	return &user, nil
 }
 
-// Update the details for a specific user. Notice that we check against the version
-// field to help prevent any race conditions during the request cycle, just like we did
-// when updating a movie. And we also check for a violation of the "users_email_key"
-// constraint when performing the update, just like we did when inserting the user
-// record originally.
 func (m UserModel) Update(user *User) error {
 	query := `
 UPDATE users
@@ -142,8 +118,6 @@ RETURNING version`
 	return nil
 }
 
-// The Set() method calculates the bcrypt hash of a plaintext password, and stores both
-// the hash and the plaintext versions in the struct.
 func (p *password) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {
@@ -154,9 +128,6 @@ func (p *password) Set(plaintextPassword string) error {
 	return nil
 }
 
-// The Matches() method checks whether the provided plaintext password matches the
-// hashed password stored in the struct, returning true if it matches and false
-// otherwise.
 func (p *password) Matches(plaintextPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
 	if err != nil {
@@ -186,27 +157,16 @@ func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Name != "", "name", "must be provided")
 	v.Check(len(user.Name) <= 500, "name", "must not be more than 500 bytes long")
-	// Call the standalone ValidateEmail() helper.
 	ValidateEmail(v, user.Email)
-	// If the plaintext password is not nil, call the standalone
-	// ValidatePasswordPlaintext() helper.
 	if user.Password.plaintext != nil {
 		ValidatePasswordPlaintext(v, *user.Password.plaintext)
 	}
-	// If the password hash is ever nil, this will be due to a logic error in our
-	// codebase (probably because we forgot to set a password for the user). It's a
-	// useful sanity check to include here, but it's not a problem with the data
-	// provided by the client. So rather than adding an error to the validation map we
-	// raise a panic instead.
 	if user.Password.hash == nil {
 		panic("missing password hash for user")
 	}
 }
 func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
-	// Calculate the SHA-256 hash of the plaintext token provided by the client.
-	// Remember that this returns a byte *array* with length 32, not a slice.
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
-	// Set up the SQL query.
 	query := `
 SELECT users.id, users.created_at, users.name, users.email, users.password_hash, users.activated, users.version, users.role
 FROM users
@@ -215,16 +175,12 @@ ON users.id = tokens.user_id
 WHERE tokens.hash = $1
 AND tokens.scope = $2
 AND tokens.expiry > $3`
-	// Create a slice containing the query arguments. Notice how we use the [:] operator
-	// to get a slice containing the token hash, rather than passing in the array (which
-	// is not supported by the pq driver), and that we pass the current time as the
-	// value to check against the token expiry.
+
 	args := []any{tokenHash[:], tokenScope, time.Now()}
 	var user User
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Execute the query, scanning the return values into a User struct. If no matching
-	// record is found we return an ErrRecordNotFound error.
+
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
 		&user.CreatedAt,
@@ -243,7 +199,7 @@ AND tokens.expiry > $3`
 			return nil, err
 		}
 	}
-	// Return the matching user.
+
 	return &user, nil
 }
 
@@ -251,7 +207,7 @@ func (m MovieModel) DeleteMovie(id int64) error {
 	if id < 1 {
 		return ErrRecordNotFound
 	}
-	// Construct the SQL query to delete the record.
+
 	query := `
 DELETE FROM movies
 WHERE id = $1`
@@ -269,13 +225,4 @@ WHERE id = $1`
 	}
 	return nil
 
-}
-
-func (m MovieModel) AddMovie(movie *Movie) error {
-	query := `
-		INSERT INTO movies(title, year, runtime, genres)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, version`
-
-	return m.DB.QueryRow(query, &movie.Title, &movie.Year, &movie.Runtime, pq.Array(&movie.Genres)).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
 }

@@ -15,18 +15,16 @@ var (
 // Create a Models struct which wraps the MovieModel
 // kind of enveloping
 type Models struct {
-	Movies    MovieModel
-	Directors DirectorsModel
-	Users     UserModel
-	Tokens    TokenModel
+	Items  ItemModel
+	Users  UserModel
+	Tokens TokenModel
 }
 
 // method which returns a Models struct containing the initialized MovieModel.
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Movies:    MovieModel{DB: db},
-		Directors: DirectorsModel{DB: db},
-		Users:     UserModel{DB: db},
-		Tokens:    TokenModel{DB: db},
+		Items:  ItemModel{DB: db},
+		Users:  UserModel{DB: db},
+		Tokens: TokenModel{DB: db},
 	}
 }

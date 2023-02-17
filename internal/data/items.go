@@ -19,7 +19,7 @@ type Item struct {
 	Category    []string `json:"category,omitempty"`
 }
 
-func ValidateMovie(v *validator.Validator, item *Item) {
+func ValidateItem(v *validator.Validator, item *Item) {
 	v.Check(item.Name != "", "item's name", "must be provided")
 	v.Check(len(item.Name) <= 500, "item's name", "must not be more than 500 bytes long")
 	v.Check(item.Description != "", "item's description", "must be provided")
@@ -64,52 +64,13 @@ WHERE id = $1`
 		pq.Array(&item.Category))
 	return &item, m.DB.QueryRow(query, id).Err()
 }
-func (m DirectorsModel) GetAll(name string, awards []string, filters Filters) ([]*Director, error) {
+
+func (m ItemModel) GetAll(name string, category []string, filters Filters) ([]*Item, error) {
 	// Update the SQL query to include the filter conditions.
 	query := fmt.Sprintf(`
-SELECT id, name, surname, awards
-FROM directors
+SELECT id, name, description, price, category
+FROM items
 WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
-AND (awards @> $2 OR $2 = '{}')
-ORDER BY %s %s, id ASC
-LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortByAwards())
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	// Pass the title and genres as the placeholder parameter values.
-	args := []any{name, pq.Array(awards), filters.limit(), filters.offset()}
-	// And then pass the args slice to QueryContext() as a variadic parameter.
-	rows, err := m.DB.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-	directors := []*Director{}
-	for rows.Next() {
-		var director Director
-		err := rows.Scan(
-			&director.ID,
-			&director.Name,
-			&director.Surname,
-			pq.Array(&director.Awards),
-		)
-		if err != nil {
-			return nil, err
-		}
-		directors = append(directors, &director)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return directors, nil
-}
-func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
-	// Update the SQL query to include the filter conditions.
-	query := fmt.Sprintf(`
-SELECT id, created_at, title, year, runtime, genres, version
-FROM movies
-WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
 AND (genres @> $2 OR $2 = '{}')
 ORDER BY %s %s, id ASC
 LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
@@ -117,7 +78,7 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	// Pass the title and genres as the placeholder parameter values.
-	args := []any{title, pq.Array(genres), filters.limit(), filters.offset()}
+	args := []any{name, pq.Array(category), filters.limit(), filters.offset()}
 	// And then pass the args slice to QueryContext() as a variadic parameter.
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -125,54 +86,46 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	}
 
 	defer rows.Close()
-	movies := []*Movie{}
+	items := []*Item{}
 	for rows.Next() {
-		var movie Movie
+		var item Item
 		err := rows.Scan(
-			&movie.ID,
-			&movie.CreatedAt,
-			&movie.Title,
-			&movie.Year,
-			&movie.Runtime,
-			pq.Array(&movie.Genres),
-			&movie.Version,
+			&item.ID,
+			&item.Name,
+			&item.Description,
+			&item.Price,
+			pq.Array(&item.Category),
 		)
 		if err != nil {
 			return nil, err
 		}
-		movies = append(movies, &movie)
+		items = append(items, &item)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	return movies, nil
+	return items, nil
 }
 
 // method for updating a specific record in the movies table.
-func (m MovieModel) Update(movie *Movie) error {
+func (m ItemModel) Update(item *Item) error {
 	query := `
-	UPDATE movies
-	SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
-	WHERE id = $5
-	RETURNING version`
+	UPDATE items
+	SET name = $1, description = $2, price = $3, category = $4
+	WHERE id = $5`
 
-	return m.DB.QueryRow(query, movie.Title,
-		movie.Year,
-		movie.Runtime,
-		pq.Array(movie.Genres),
-		movie.ID).Scan(
-		&movie.Version)
+	return m.DB.QueryRow(query, &item.Name, &item.Description, &item.Price, pq.Array(&item.Category)).Scan(&item.ID)
 
 }
 
 // method for deleting a specific record from the movies table.
-func (m MovieModel) Delete(id int64) error {
+func (m ItemModel) Delete(id int64) error {
 	if id < 1 {
 		return ErrRecordNotFound
 	}
 	// Construct the SQL query to delete the record.
 	query := `
-DELETE FROM movies
+DELETE FROM items
 WHERE id = $1`
 
 	result, err := m.DB.Exec(query, id)
