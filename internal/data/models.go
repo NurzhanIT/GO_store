@@ -5,26 +5,23 @@ import (
 	"errors"
 )
 
-// Define a custom ErrRecordNotFound error. We'll return this from our Get() method when
-// looking up a movie that doesn't exist in our database.
 var (
 	ErrRecordNotFound = errors.New("record (row, entry) not found")
 	ErrEditConflict   = errors.New("edit conflict")
 )
 
-// Create a Models struct which wraps the MovieModel
-// kind of enveloping
 type Models struct {
-	Items  ItemModel
-	Users  UserModel
-	Tokens TokenModel
+	Items   ItemModel
+	Users   UserModel
+	Tokens  TokenModel
+	Baskets BasketModel
 }
 
-// method which returns a Models struct containing the initialized MovieModel.
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Items:  ItemModel{DB: db},
-		Users:  UserModel{DB: db},
-		Tokens: TokenModel{DB: db},
+		Items:   ItemModel{DB: db},
+		Users:   UserModel{DB: db},
+		Tokens:  TokenModel{DB: db},
+		Baskets: BasketModel{DB: db},
 	}
 }

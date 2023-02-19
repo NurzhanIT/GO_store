@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// By default, the keys in the JSON object are equal to the field names in the struct ( ID,
-// CreatedAt, Title and so on).
 type Item struct {
 	ID          int64    `json:"id"`
 	Name        string   `json:"name"`
@@ -32,16 +30,10 @@ func ValidateItem(v *validator.Validator, item *Item) {
 	v.Check(validator.Unique(item.Category), "item's category", "must not contain duplicate values")
 }
 
-// Define a MovieModel struct type which wraps a sql.DB connection pool.
-type MovieModel struct {
-	DB *sql.DB
-}
-
 type ItemModel struct {
 	DB *sql.DB
 }
 
-// method for inserting a new record in the movies table.
 func (m ItemModel) Insert(item *Item) error {
 	query := `
 		INSERT INTO items(name, description, price, category)
@@ -51,7 +43,6 @@ func (m ItemModel) Insert(item *Item) error {
 	return m.DB.QueryRow(query, &item.Name, &item.Description, &item.Price, pq.Array(&item.Category)).Scan(&item.ID)
 }
 
-// method for fetching a specific record from the movies table.
 func (m ItemModel) Get(id int64) (*Item, error) {
 	query := `
 SELECT id, name, description, price, category
@@ -66,20 +57,20 @@ WHERE id = $1`
 }
 
 func (m ItemModel) GetAll(name string, category []string, filters Filters) ([]*Item, error) {
-	// Update the SQL query to include the filter conditions.
+
 	query := fmt.Sprintf(`
 SELECT id, name, description, price, category
 FROM items
 WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
-AND (genres @> $2 OR $2 = '{}')
+AND (category @> $2 OR $2 = '{}')
 ORDER BY %s %s, id ASC
 LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Pass the title and genres as the placeholder parameter values.
+
 	args := []any{name, pq.Array(category), filters.limit(), filters.offset()}
-	// And then pass the args slice to QueryContext() as a variadic parameter.
+
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -107,7 +98,6 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	return items, nil
 }
 
-// method for updating a specific record in the movies table.
 func (m ItemModel) Update(item *Item) error {
 	query := `
 	UPDATE items
@@ -118,7 +108,6 @@ func (m ItemModel) Update(item *Item) error {
 
 }
 
-// method for deleting a specific record from the movies table.
 func (m ItemModel) Delete(id int64) error {
 	if id < 1 {
 		return ErrRecordNotFound

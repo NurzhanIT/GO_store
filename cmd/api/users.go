@@ -5,11 +5,12 @@ import (
 	"fainal.net/internal/data"
 	"fainal.net/internal/validator"
 	"net/http"
+	"strings"
 	"time"
 )
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Create an anonymous struct to hold the expected data from the request body.
+
 	var input struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -153,4 +154,40 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+}
+func (app *application) getUserInfoHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Add("Vary", "Authorization")
+	authorizationHeader := r.Header.Get("Authorization")
+
+	headerParts := strings.Split(authorizationHeader, " ")
+	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	token := headerParts[1]
+	v := validator.New()
+
+	if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidAuthenticationTokenResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
