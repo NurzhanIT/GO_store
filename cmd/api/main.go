@@ -8,6 +8,7 @@ import (
 	"fainal.net/internal/mailer"
 	"flag"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -34,6 +35,9 @@ type config struct {
 		username string
 		password string
 		sender   string
+	}
+	cors struct {
+		trustedOrigins []string
 	}
 }
 
@@ -75,6 +79,11 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "211322@astanait.edu.kz", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "Aitu2021!", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <211322@astanait.edu.kz>", "SMTP sender")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+	})
 
 	flag.Parse()
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
