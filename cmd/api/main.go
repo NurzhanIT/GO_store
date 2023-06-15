@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"flag"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -56,8 +57,21 @@ type application struct {
 //Sasha   -
 
 func main() {
+	// fiber.SetConfigFile("ENV")
+	// viper.ReadInConfig()
+	// viper.AutomaticEnv()
+	// port := fmt.Sprint(viper.Get("PORT"))
+
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "3000"
+	}
+
+	portInt, _ := strconv.Atoi(port)
+
 	var cfg config
-	flag.IntVar(&cfg.port, "port", 8000, "API server port")
+	flag.IntVar(&cfg.port, "port", portInt, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
 	// Read the DSN value from the db-dsn command-line flag into the config struct. We
@@ -78,7 +92,8 @@ func main() {
 
 	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.office365.com", "SMTP host")
 	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
-	flag.StringVar(&cfg.smtp.username, "smtp-username", "211322@astanait.edu.kz", "SMTP username")
+	// flag.StringVar(&cfg.smtp.username, "smtp-username", "211322@astanait.edu.kz", "SMTP username")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "211437@astanait.edu.kz", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "Aitu2021!", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Hobby Shop <211437@astanait.edu.kz>", "SMTP sender")
 
