@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	chat "github.com/AlexanderLukashuk/chatapp/server/proto"
+	chat "fainal.net/chatapp/server/proto"
 )
 
 func receiveMessages(stream chat.ChatService_BroadcastClient, wg *sync.WaitGroup) {
