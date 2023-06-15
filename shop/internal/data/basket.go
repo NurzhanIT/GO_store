@@ -45,7 +45,7 @@ func (m BasketModel) UpdateBasket(basket *Basket) error {
 	UPDATE baskets
 	SET items = $1
 	WHERE user_id = $2`
-	return m.DB.QueryRow(query, pq.Array(&basket.Items)).Scan(&basket.ID)
+	return m.DB.QueryRow(query, pq.Array(&basket.Items), &basket.User_id).Scan(&basket.ID)
 }
 
 func (m BasketModel) DeleteBasket(id int64) error {
