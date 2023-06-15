@@ -4,15 +4,29 @@ services:
       dockerfile: ./news_paper/Dockerfile
     ports:
       - "2000:5000"
+    container_name: news_app
     working_dir: /news_paper
     command: >
       sh -c "python server.py"
     networks:
       - shop
 
+  gateway:
+    build:
+      dockerfile: ./API_gateway/Dockerfile
+    ports:
+      - "10000:5000"
+    container_name: gateway
+    working_dir: /gateway
+    command: >
+      sh -c "python gateway.py"
+    networks:
+      - shop
+
   shop-service:
     build:
       dockerfile: ./shop/Dockerfile
+    container_name: shop_service
     restart: always
     ports:
       - "7777:3000"
@@ -22,6 +36,7 @@ services:
 
   shop-postgres:
     image: 'postgres:14.0'
+    container_name: shop-postgres
     ports:
       - "6000:5432"
     restart: always
