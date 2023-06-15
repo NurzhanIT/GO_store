@@ -31,7 +31,6 @@ type server struct {
 }
 
 func (s *server) AddReview(ctx context.Context, req *pb.Review) (*pb.Review, error) {
-	// Сохраняем рейтинг и обзор в базу данных
 	insertStatement := `
 		INSERT INTO reviews (product_id, rating, review)
 		VALUES ($1, $2, $3)
@@ -42,7 +41,6 @@ func (s *server) AddReview(ctx context.Context, req *pb.Review) (*pb.Review, err
 		return nil, fmt.Errorf("Failed to add review: %v", err)
 	}
 
-	// Возвращаем простой ответ, указывающий на успешное добавление отзыва
 	return &pb.Review{
 		ProductId: req.ProductId,
 		Rating:    req.Rating,
@@ -51,20 +49,17 @@ func (s *server) AddReview(ctx context.Context, req *pb.Review) (*pb.Review, err
 }
 
 func setupIntegrationTest(t *testing.T) {
-	// Connect to the PostgreSQL test database
 	connStr := fmt.Sprintf("postgresql://postgres:20072004@localhost:5432/%s?sslmode=disable", testDBName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		t.Fatalf("failed to connect to database: %v", err)
 	}
 
-	// Ping the database to ensure the connection is successful
 	err = db.Ping()
 	if err != nil {
 		t.Fatalf("failed to ping database: %v", err)
 	}
 
-	// Create the "reviews" table if it doesn't exist
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS reviews (
 			product_id VARCHAR(50),
@@ -76,7 +71,6 @@ func setupIntegrationTest(t *testing.T) {
 		t.Fatalf("failed to create 'reviews' table: %v", err)
 	}
 
-	// Start the gRPC server
 	lis, err := net.Listen("tcp", testPort)
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
@@ -94,13 +88,10 @@ func setupIntegrationTest(t *testing.T) {
 }
 
 func teardownIntegrationTest() {
-	// Stop the gRPC server
 	testServer.Stop()
 
-	// Close the database connection
 	testDB.Close()
 
-	// Drop the test database
 	connStr := fmt.Sprintf("postgresql://postgres:20072004@localhost:5432/%s?sslmode=disable", "postgres")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -116,11 +107,9 @@ func teardownIntegrationTest() {
 }
 
 func TestAddReviewIntegration(t *testing.T) {
-	// Setup
 	setupIntegrationTest(t)
 	defer teardownIntegrationTest()
 
-	// Create a gRPC client connection to the test server
 	conn, err := grpc.Dial(testAddr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		t.Fatalf("Failed to dial test server: %v", err)
@@ -129,25 +118,21 @@ func TestAddReviewIntegration(t *testing.T) {
 
 	client := pb.NewRatingServicerClient(conn)
 
-	// Prepare a test review
 	req := &pb.Review{
 		ProductId: "example_product",
 		Rating:    5,
 		Review:    "Great product!",
 	}
 
-	// Call the AddReview gRPC method
 	resp, err := client.AddReview(context.Background(), req)
 	if err != nil {
 		t.Fatalf("AddReview request failed: %v", err)
 	}
 
-	// Verify the response
 	if resp.ProductId != req.ProductId || resp.Rating != req.Rating || resp.Review != req.Review {
 		t.Errorf("AddReview response does not match the request. Got %+v, want %+v", resp, req)
 	}
 
-	// Verify that the review is stored in the database
 	var storedReview pb.Review
 	err = testDB.QueryRow("SELECT product_id, rating, review FROM reviews WHERE product_id = $1", req.ProductId).
 		Scan(&storedReview.ProductId, &storedReview.Rating, &storedReview.Review)
@@ -155,7 +140,6 @@ func TestAddReviewIntegration(t *testing.T) {
 		t.Fatalf("Failed to retrieve the stored review from the database: %v", err)
 	}
 
-	// Verify the stored review matches the request
 	if storedReview.ProductId != req.ProductId || storedReview.Rating != req.Rating || storedReview.Review != req.Review {
 		t.Errorf("Stored review does not match the request. Got %+v, want %+v", storedReview, req)
 	}
