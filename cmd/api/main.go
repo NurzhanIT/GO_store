@@ -16,7 +16,7 @@ import (
 
 const version = "1.0.0"
 
-type Config struct {
+type config struct {
 	port int
 	env  string
 	db   struct {
@@ -43,7 +43,7 @@ type Config struct {
 }
 
 type application struct {
-	config Config
+	config config
 	logger *jsonlog.Logger
 	models data.Models
 	mailer mailer.Mailer
@@ -56,7 +56,7 @@ type application struct {
 //Sasha   -
 
 func main() {
-	var cfg Config
+	var cfg config
 	flag.IntVar(&cfg.port, "port", 8000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
@@ -112,7 +112,7 @@ func main() {
 
 }
 
-func OpenDB(cfg Config) (*sql.DB, error) {
+func openDB(cfg config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
 		return nil, err
