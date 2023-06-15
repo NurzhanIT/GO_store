@@ -24,8 +24,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	router.HandlerFunc(http.MethodPost, "/v1/basket", app.createBasketHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/basket/:id", app.showBasketHandler)
-	router.HandlerFunc(http.MethodPatch, "/v1/basket/:id", app.updateBasketHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/basket", app.showBasketHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/basket", app.updateBasketHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/basket/:id", app.deleteBasketHandler)
 
 	router.HandlerFunc(http.MethodGet, "/v1/get-user", app.getUserInfoHandler)

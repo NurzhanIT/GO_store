@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fainal.net/internal/data"
+	"fainal.net/internal/validator"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 func (app *application) createBasketHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email string  `json:"email"`
 		Items []int64 `json:"items"`
 	}
 	err := app.readJSON(w, r, &input)
@@ -16,11 +18,30 @@ func (app *application) createBasketHandler(w http.ResponseWriter, r *http.Reque
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	user, err := app.models.Users.GetByEmail(input.Email)
+
+	w.Header().Add("Vary", "Authorization")
+	authorizationHeader := r.Header.Get("Authorization")
+
+	headerParts := strings.Split(authorizationHeader, " ")
+	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	token := headerParts[1]
+	v := validator.New()
+
+	if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			app.invalidCredentialsResponse(w, r)
+			app.invalidAuthenticationTokenResponse(w, r)
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
@@ -48,12 +69,40 @@ func (app *application) createBasketHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) showBasketHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r)
-	if err != nil {
-		app.notFoundResponse(w, r)
+	//id, err := app.readIDParam(r)
+	//if err != nil {
+	//	app.notFoundResponse(w, r)
+	//	return
+	//}
+	w.Header().Add("Vary", "Authorization")
+	authorizationHeader := r.Header.Get("Authorization")
+
+	headerParts := strings.Split(authorizationHeader, " ")
+	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+		app.invalidAuthenticationTokenResponse(w, r)
 		return
 	}
-	basket, err := app.models.Baskets.GetBasket(id)
+
+	token := headerParts[1]
+	v := validator.New()
+
+	if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidAuthenticationTokenResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	basket, err := app.models.Baskets.GetBasket(user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -72,13 +121,42 @@ func (app *application) showBasketHandler(w http.ResponseWriter, r *http.Request
 
 func (app *application) updateBasketHandler(w http.ResponseWriter, r *http.Request) {
 
-	id, err := app.readIDParam(r)
-	if err != nil {
-		app.notFoundResponse(w, r)
+	//id, err := app.readIDParam(r)
+	//if err != nil {
+	//	app.notFoundResponse(w, r)
+	//	return
+	//}
+
+	w.Header().Add("Vary", "Authorization")
+	authorizationHeader := r.Header.Get("Authorization")
+
+	headerParts := strings.Split(authorizationHeader, " ")
+	if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+		app.invalidAuthenticationTokenResponse(w, r)
 		return
 	}
 
-	basket, err := app.models.Baskets.GetBasket(id)
+	token := headerParts[1]
+	v := validator.New()
+
+	if data.ValidateTokenPlaintext(v, token); !v.Valid() {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeAuthentication, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidAuthenticationTokenResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	basket, err := app.models.Baskets.GetBasket(user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -102,14 +180,14 @@ func (app *application) updateBasketHandler(w http.ResponseWriter, r *http.Reque
 	if input.Items != nil {
 		basket.Items = input.Items
 	}
-
+	fmt.Println(basket)
 	err = app.models.Baskets.UpdateBasket(basket)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"updated basket": basket}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"basket": basket}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

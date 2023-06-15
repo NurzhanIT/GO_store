@@ -17,6 +17,7 @@ func (app *application) createItemHandler(w http.ResponseWriter, r *http.Request
 		Description string   `json:"description"`
 		Price       int32    `json:"price"`
 		Category    []string `json:"category"`
+		Img         string   `json:"image"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -56,6 +57,7 @@ func (app *application) createItemHandler(w http.ResponseWriter, r *http.Request
 		Description: input.Description,
 		Price:       input.Price,
 		Category:    input.Category,
+		Img:         input.Img,
 	}
 
 	err = app.models.Items.Insert(item)
@@ -189,12 +191,14 @@ func (app *application) listItemsHandler(w http.ResponseWriter, r *http.Request)
 	var input struct {
 		Name     string
 		Category []string
+
 		data.Filters
 	}
 	v := validator.New()
 	qs := r.URL.Query()
 	input.Name = app.readString(qs, "name", "")
 	input.Category = app.readCSV(qs, "category", []string{})
+
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	input.Filters.Sort = app.readString(qs, "sort", "id")

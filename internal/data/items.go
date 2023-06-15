@@ -3,10 +3,11 @@ package data
 import (
 	"context"
 	"database/sql"
-	"fainal.net/internal/validator"
 	"fmt"
-	"github.com/lib/pq"
 	"time"
+
+	"fainal.net/internal/validator"
+	"github.com/lib/pq"
 )
 
 type Item struct {
@@ -15,6 +16,7 @@ type Item struct {
 	Description string   `json:"description"`
 	Price       int32    `json:"price,omitempty"`
 	Category    []string `json:"category,omitempty"`
+	Img         string   `json:"image"`
 }
 
 func ValidateItem(v *validator.Validator, item *Item) {
@@ -36,23 +38,24 @@ type ItemModel struct {
 
 func (m ItemModel) Insert(item *Item) error {
 	query := `
-		INSERT INTO items(name, description, price, category)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO items(name, description, price, category, image)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
-	return m.DB.QueryRow(query, &item.Name, &item.Description, &item.Price, pq.Array(&item.Category)).Scan(&item.ID)
+	return m.DB.QueryRow(query, &item.Name, &item.Description, &item.Price, pq.Array(&item.Category), &item.Img).Scan(&item.ID)
 }
 
 func (m ItemModel) Get(id int64) (*Item, error) {
 	query := `
-SELECT id, name, description, price, category
+SELECT id, name, description, price, category, image
 FROM items
 WHERE id = $1`
 	var item Item
 	m.DB.QueryRow(query, id).Scan(&item.ID, &item.Name,
 		&item.Description,
 		&item.Price,
-		pq.Array(&item.Category))
+		pq.Array(&item.Category),
+		&item.Img)
 	return &item, m.DB.QueryRow(query, id).Err()
 }
 

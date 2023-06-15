@@ -16,7 +16,7 @@ import (
 
 const version = "1.0.0"
 
-type config struct {
+type Config struct {
 	port int
 	env  string
 	db   struct {
@@ -43,7 +43,7 @@ type config struct {
 }
 
 type application struct {
-	config config
+	config Config
 	logger *jsonlog.Logger
 	models data.Models
 	mailer mailer.Mailer
@@ -56,15 +56,15 @@ type application struct {
 //Sasha   -
 
 func main() {
-	var cfg config
+	var cfg Config
 	flag.IntVar(&cfg.port, "port", 8000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
 	// Read the DSN value from the db-dsn command-line flag into the config struct. We
 	// default to using our development DSN if no flag is provided.
 	// in powershell use next command: $env:DSN="postgres://postgres:20072004@localhost:5432/greenlight?sslmode=disable"
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:admin@localhost/final_go?sslmode=disable", "PostgreSQL DSN")
-	// flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:postgres@localhost/final_go?sslmode=disable", "PostgreSQL DSN")
+	// flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:admin@localhost/final_go?sslmode=disable", "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://postgres:postgres@localhost/final_go?sslmode=disable", "PostgreSQL DSN")
 
 	// Setting restrictions on db connections
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
@@ -112,7 +112,7 @@ func main() {
 
 }
 
-func openDB(cfg config) (*sql.DB, error) {
+func OpenDB(cfg Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
 		return nil, err
