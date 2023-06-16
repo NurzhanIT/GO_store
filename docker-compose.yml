@@ -58,8 +58,19 @@ services:
         RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 2592000000"
       ports:
         - "15673:15672"
+      networks:
+        - shop
 
 
-
+  shop-pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: nurzhan@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_LISTEN_ADDRESS: "0.0.0.0"
+    ports:
+      - "5555:80"
+    networks:
+      - shop
 networks:
   shop:
