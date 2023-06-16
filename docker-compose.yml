@@ -1,0 +1,65 @@
+services:
+  news_app:
+    build:
+      dockerfile: ./news_paper/Dockerfile
+    ports:
+      - "2000:5000"
+    container_name: news_app
+    working_dir: /news_paper
+    command: >
+      sh -c "python server.py"
+    networks:
+      - shop
+
+  gateway:
+    build:
+      dockerfile: ./API_gateway/Dockerfile
+    ports:
+      - "10000:5000"
+    container_name: gateway
+    working_dir: /gateway
+    command: >
+      sh -c "python gateway.py"
+    networks:
+      - shop
+
+  shop-service:
+    build:
+      dockerfile: ./shop/Dockerfile
+    container_name: shop_service
+    restart: always
+    ports:
+      - "7777:3000"
+    networks:
+      - shop
+
+
+  shop-postgres:
+    image: 'postgres:14.0'
+    container_name: shop-postgres
+    ports:
+      - "6000:5432"
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shop
+
+    networks:
+      - shop
+
+
+  rabbit:
+      image: "rabbitmq:3.8.16-management"
+      container_name: "rabbit"
+      environment:
+        RABBITMQ_DEFAULT_USER: rabbitmq
+        RABBITMQ_DEFAULT_PASS: rabbitmq
+        RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 2592000000"
+      ports:
+        - "15673:15672"
+
+
+
+networks:
+  shop:
