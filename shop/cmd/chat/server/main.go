@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	// chat "github.com/AlexanderLukashuk/chatapp/server/proto"
-	chat "github.com/NurzhanIT/GO_store/fainal.net/cmd/chat/server/proto"
+	chat "fainal.net/cmd/chat/server/proto"
 )
 
 type chatServer struct {
