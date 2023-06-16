@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	chat "fainal.net/chatapp/server/proto"
+	chat "fainal.net/chat/server/proto"
 )
 
 func receiveMessages(stream chat.ChatService_BroadcastClient, wg *sync.WaitGroup) {
@@ -25,11 +25,8 @@ func receiveMessages(stream chat.ChatService_BroadcastClient, wg *sync.WaitGroup
 			return
 		}
 
-		// timestamp := message.GetTimestamp()
 		username := message.GetUsername()
 		content := message.GetContent()
-		// t := timestampToTime(timestamp)
-		// log.Printf("%s: %s: %s", username, content)
 		log.Printf("%s: %s", username, content)
 	}
 }
@@ -48,11 +45,8 @@ func doSendMessage(c chat.ChatServiceClient, msg *chat.Message) {
 		log.Fatalf("Error while calling send RPC %v", err)
 	}
 
-	// timestamp := response.GetTimestamp()
 	username := response.GetUsername()
 	content := response.GetContent()
-	// t := timestampToTime(timestamp)
-	// log.Printf("%s: %s: %s", t.Format("02/01/2006 15:04"), username, content)
 	log.Printf("%s: %s", username, content)
 }
 

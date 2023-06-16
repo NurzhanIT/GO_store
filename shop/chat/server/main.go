@@ -10,8 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	// chat "github.com/AlexanderLukashuk/chatapp/server/proto"
-	chat "github.com/NurzhanIT/GO_store/fainal.net/cmd/chat/server/proto"
+	chat "fainal.net/chat/server/proto"
 )
 
 type chatServer struct {
@@ -29,8 +28,6 @@ func (s *chatServer) Broadcast(stream chat.ChatService_BroadcastServer) error {
 			return err
 		}
 
-		// message.Timestamp = time.Now().Unix()
-
 		if err := s.publishMessage(message); err != nil {
 			log.Printf("Failed to publish message: %v", err)
 		}
@@ -40,8 +37,6 @@ func (s *chatServer) Broadcast(stream chat.ChatService_BroadcastServer) error {
 }
 
 func (s *chatServer) SendMessage(ctx context.Context, message *chat.Message) (*chat.Message, error) {
-	// message.Timestamp = time.Now().Unix()
-
 	if err := s.publishMessage(message); err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		return nil, err
